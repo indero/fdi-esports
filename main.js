@@ -1,44 +1,51 @@
-const parseEntries = entries => {
-  const entriesArr = [];
-  let currentRow = 1;
-
-  let currentRowArr = [];
-
-  entries.forEach(entry => {
-    const localRow = parseInt(entry.gs$cell.row);
-
-    if (currentRow != localRow) {
-      currentRow = localRow;
-      entriesArr.push([...currentRowArr]);
-      currentRowArr = [];
-    }
-
-    currentRowArr.push(entry.content.$t);
-  });
-
-  entriesArr.push([...currentRowArr]);
-  
-  return entriesArr;
-};
+import Papa from 'papaparse';
 
 const $container = document.querySelector('[data-entries]');
-const gSheetJSONsrc = 'https://spreadsheets.google.com/feeds/cells/1O36xe8y9oOeYBOr0mvS7NZLDm83hilO0WB9f75CRnJA/1/public/full?alt=json&rnd=' + (1000 * Math.random() + (Date().now))
+const gSheetCSVsrc = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQATGjyNqddTf-u7BceNp7Blja6MKO7vy1qoXoglnXhLkqOdnApU7J0EDP13etC1CeaRnvpZ8zVvzC9/pub?gid=0&single=true&output=csv&cacheBuster=' + (1000 * Math.random() + (Date().now))
 
-fetch(gSheetJSONsrc).then((resp) => (resp.json())).then((body) => {
-  const entries = [...body.feed.entry];
-  const entriesArr = [...parseEntries(entries)];
-  entriesArr.shift();
-  
-  entriesArr.sort((a, b) => (0.5 - Math.random()));
+// Fetch and parse the CSV data using PapaParse
+Papa.parse(gSheetCSVsrc, {
+  download: true, // Fetch the CSV file
+  header: true, // Use the first row as headers
+  skipEmptyLines: true, // Skip empty rows
+  complete: function (results) {
+    console.log("Parsed Results:", results); // Debug: log parsed results
 
-  console.log(entriesArr)
-  
-  const entriesHTML = entriesArr.reduce((r, d) => (
-    r + `<details><summary><strong>[FDI]</strong> ${d[1]}</summary><p>${d[2]}</p>${d.length > 3 ? `<img src="${d[3]}" alt="${d[1]}" />`: '' }</details>`
-  ),'')
+    // Get the parsed data
+    const entries = results.data;
 
-  $container.innerHTML = entriesHTML;
+    // Debug: Log entries to verify structure
+    console.log("Entries:", entries);
+
+    // Shuffle the entries for randomness
+    const shuffledEntries = entries.sort(() => 0.5 - Math.random());
+
+    // Generate HTML for the entries
+    const entriesHTML = shuffledEntries.map((entry) => {
+      const name = entry.Member || "Unnamed"; // Replace "Name" with your column header
+      const description = entry.Beschreibung || "No description available."; // Replace "Description" as needed
+      const imageHTML = entry.Bild
+        ? `<img src="${entry.Bild}" alt="${name}" />`
+        : ""; // Replace "Image" with the correct column header
+
+      return `
+        <details>
+          <summary><strong>[FDI]</strong> ${name}</summary>
+          <p>${description}</p>
+          ${imageHTML}
+        </details>
+      `;
+    }).join("");
+
+    // Insert the generated HTML into the container
+    $container.innerHTML = entriesHTML;
+  },
+  error: function (error) {
+    console.error("Error parsing CSV:", error);
+    $container.innerHTML = "<p>Failed to load entries. Please try again later.</p>";
+  },
 });
+
 
 const $cur = document.querySelector('.cursor');
 

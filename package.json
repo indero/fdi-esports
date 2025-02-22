@@ -2,9 +2,10 @@
   "name": "fdi-esports",
   "version": "1.0.0",
   "description": "website für FDI",
+  "source": "index.html",
   "scripts": {
-    "start": "parcel serve index.html",
-    "build": "parcel build index.html",
+    "start": "parcel",
+    "build": "parcel build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
